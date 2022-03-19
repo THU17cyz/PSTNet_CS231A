@@ -1,0 +1,8 @@
+.DS_Store
+__pycache__/
+*.swp
+*.pyc
+data/
+*.o
+*.egg
+*.so

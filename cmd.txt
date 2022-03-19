@@ -1,0 +1,53 @@
+python train-ntu.py --eval --resume ~/pst/output/50fs/model_12.pth --data-test-meta data/50_few_shot_depth_val_ann.txt --data-meta data/50_few_shot_depth_train_ann.list
+
+python train-ntu.py --output-dir output/50fs_support --resume ~/pst/output/50fs/model_12.pth --data-test-meta data/50_few_shot_depth_support_val_ann.txt --data-meta data/50_few_shot_depth_support_ann.txt
+
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G --job-name=run_mae_eval --output=50fs_support.out run_fs.sh
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G --job-name=run_mae_eval --output=evalfs50_12.out run_eval.sh
+
+sbatch --exclude=atlas6 --partition=atlas --qos=normal --nodes=1 --cpus-per-task=8 --job-name=data_process --output=data_process.out run_data.sh 1
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=new_full.out run.sh new_full data/depth_train_ann.txt data/depth_valid_ann.txt
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=new_fs50.out run.sh new_fs50 data/50_few_shot_depth_train_ann.list data/50_few_shot_depth_val_ann.txt
+
+
+python train-ntu-cl.py --output-dir test --data-meta few_shot_depth_unlabeled_ann.txt --data-test-meta data/50_few_shot_depth_val_ann.txt \
+--batch-size 8
+
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=new_cl.out run_cl.sh new_cl few_shot_depth_unlabeled_ann.txt data/50_few_shot_depth_val_ann.txt
+
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=new_fs_nopretrain.out run_fs.sh new_fs_nopretrain
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=new_fs_nopretrain_finetune.out run_fs.sh new_fs_nopretrain_finetune
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=new_fs_nopretrain_finetune_cl3e.out run_fs.sh new_fs_nopretrain_finetune_cl3e new_cl/model_3.pth
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=new_fs_nopretrain_linprobe_cl3e.out run_fs.sh new_fs_nopretrain_linprobe_cl3e new_cl/model_3.pth
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=new_fs_nopretrain_linprobe_train19e.out run_fs.sh new_fs_nopretrain_linprobe_train19e new_fs50/model_19.pth
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=new_fs_nopretrain_finetune_train19e.out run_fs.sh new_fs_nopretrain_finetune_train19e new_fs50/model_19.pth
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=loadcl_fs50train.out run.sh loadcl_fs50train data/50_few_shot_depth_train_ann.list data/50_few_shot_depth_val_ann.txt \
+--resume new_cl/model_11.pth --load_cl
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=new_fs_loadcl_finetune_train19e.out run_fs.sh new_fs_loadcl_finetune_train19e loadcl_fs50train/model_19.pth
+
+sbatch --exclude=atlas6 --partition=atlas --gres=gpu:titanxp:1 --qos=normal --nodes=1 --cpus-per-task=8 --mem=40G \
+--job-name=run_mae_eval --output=new_fs_loadcl_linprobe_train19e.out run_fs.sh new_fs_loadcl_linprobe_train19e loadcl_fs50train/model_19.pth
